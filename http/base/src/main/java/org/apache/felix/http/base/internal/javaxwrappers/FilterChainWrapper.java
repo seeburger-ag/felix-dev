@@ -18,6 +18,10 @@ package org.apache.felix.http.base.internal.javaxwrappers;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
 import org.apache.felix.http.base.internal.jakartawrappers.ServletResponseWrapper;
 import org.jetbrains.annotations.NotNull;
 
