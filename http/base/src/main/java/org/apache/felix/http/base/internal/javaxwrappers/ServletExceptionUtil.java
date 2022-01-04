@@ -19,7 +19,6 @@ package org.apache.felix.http.base.internal.javaxwrappers;
 import org.jetbrains.annotations.NotNull;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.UnavailableException;
 
 /**
  * Helper class to wrap servlet exceptions
