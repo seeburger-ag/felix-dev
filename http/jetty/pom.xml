@@ -158,6 +158,7 @@
                             org.osgi.service.http.runtime,
                             org.osgi.service.http.runtime.dto,
                             org.osgi.service.http.whiteboard,
+                            org.osgi.service.servlet.*,
                             !org.eclipse.jetty,
                             !org.eclipse.jetty.version,
                             org.eclipse.jetty.*,
@@ -242,6 +243,7 @@
                                     org.osgi.service.http.runtime,
                                     org.osgi.service.http.runtime.dto,
                                     org.osgi.service.http.whiteboard,
+                                    org.osgi.service.servlet.*,
                                     org.apache.felix.http.jetty
                                 </Export-Package>
                                 <Private-Package>

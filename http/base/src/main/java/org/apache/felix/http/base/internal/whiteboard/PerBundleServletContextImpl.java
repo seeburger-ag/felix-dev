@@ -28,9 +28,9 @@ import org.apache.felix.http.base.internal.HttpConfig;
 import org.apache.felix.http.base.internal.context.ExtServletContext;
 import org.apache.felix.http.base.internal.registry.PerContextHandlerRegistry;
 import org.apache.felix.http.base.internal.util.MimeTypes;
-import org.apache.felix.http.base.osgi.whiteboard.ServletContextHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.service.servlet.whiteboard.ServletContextHelper;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;

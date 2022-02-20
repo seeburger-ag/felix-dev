@@ -21,10 +21,10 @@ package org.apache.felix.http.base.internal.runtime;
 import java.util.Map;
 
 import org.apache.felix.http.base.internal.jakartawrappers.PreprocessorWrapper;
-import org.apache.felix.http.base.osgi.whiteboard.Preprocessor;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.Preprocessor;
 
 /**
  * Provides registration information for a {@link Preprocessor}.

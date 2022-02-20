@@ -19,9 +19,9 @@ package org.apache.felix.http.base.internal.whiteboard.tracker;
 import org.apache.felix.http.base.internal.runtime.PreprocessorInfo;
 import org.apache.felix.http.base.internal.runtime.WhiteboardServiceInfo;
 import org.apache.felix.http.base.internal.whiteboard.WhiteboardManager;
-import org.apache.felix.http.base.osgi.whiteboard.Preprocessor;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.servlet.whiteboard.Preprocessor;
 
 public final class PreprocessorTracker extends WhiteboardServiceTracker<Preprocessor>
 {

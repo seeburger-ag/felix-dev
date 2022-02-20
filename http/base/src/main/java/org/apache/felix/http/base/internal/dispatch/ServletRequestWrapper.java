@@ -80,11 +80,6 @@ final class ServletRequestWrapper extends HttpServletRequestWrapper
      */
     private static final String POST_METHOD = "POST";
 
-    /**
-     * Constant for HTTP POST method.
-     */
-    private static final String POST_METHOD = "POST";
-
     private final DispatcherType type;
     private final RequestInfo requestInfo;
     private final ExtServletContext servletContext;

@@ -16,10 +16,10 @@
  */
 package org.apache.felix.http.base.internal.whiteboard;
 
-import static org.osgi.service.http.runtime.dto.DTOConstants.FAILURE_REASON_NO_SERVLET_CONTEXT_MATCHING;
-import static org.osgi.service.http.runtime.dto.DTOConstants.FAILURE_REASON_SHADOWED_BY_OTHER_SERVICE;
-import static org.osgi.service.http.runtime.dto.DTOConstants.FAILURE_REASON_UNKNOWN;
-import static org.osgi.service.http.runtime.dto.DTOConstants.FAILURE_REASON_VALIDATION_FAILED;
+import static org.osgi.service.servlet.whiteboard.runtime.dto.DTOConstants.FAILURE_REASON_NO_SERVLET_CONTEXT_MATCHING;
+import static org.osgi.service.servlet.whiteboard.runtime.dto.DTOConstants.FAILURE_REASON_SHADOWED_BY_OTHER_SERVICE;
+import static org.osgi.service.servlet.whiteboard.runtime.dto.DTOConstants.FAILURE_REASON_UNKNOWN;
+import static org.osgi.service.servlet.whiteboard.runtime.dto.DTOConstants.FAILURE_REASON_VALIDATION_FAILED;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,8 +66,6 @@ import org.apache.felix.http.base.internal.whiteboard.tracker.JavaxServletContex
 import org.apache.felix.http.base.internal.whiteboard.tracker.JavaxServletTracker;
 import org.apache.felix.http.base.internal.whiteboard.tracker.ResourceTracker;
 import org.apache.felix.http.base.internal.whiteboard.tracker.ServletContextHelperTracker;
-import org.apache.felix.http.base.osgi.whiteboard.Preprocessor;
-import org.apache.felix.http.base.osgi.whiteboard.ServletContextHelper;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -77,11 +75,13 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.http.runtime.HttpServiceRuntimeConstants;
-import org.osgi.service.http.runtime.dto.DTOConstants;
-import org.osgi.service.http.runtime.dto.PreprocessorDTO;
-import org.osgi.service.http.runtime.dto.ServletContextDTO;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.runtime.HttpServiceRuntimeConstants;
+import org.osgi.service.servlet.whiteboard.runtime.dto.DTOConstants;
+import org.osgi.service.servlet.whiteboard.runtime.dto.PreprocessorDTO;
+import org.osgi.service.servlet.whiteboard.runtime.dto.ServletContextDTO;
+import org.osgi.service.servlet.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.Preprocessor;
+import org.osgi.service.servlet.whiteboard.ServletContextHelper;
 import org.osgi.util.tracker.ServiceTracker;
 
 import jakarta.servlet.FilterChain;

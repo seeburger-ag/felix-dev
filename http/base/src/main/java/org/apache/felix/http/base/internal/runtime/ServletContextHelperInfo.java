@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.apache.felix.http.base.internal.service.HttpServiceFactory;
 import org.apache.felix.http.base.internal.util.PatternUtil;
-import org.apache.felix.http.base.osgi.whiteboard.ServletContextHelper;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.ServletContextHelper;
 
 /**
  * Provides registration information for a {@link ServletContextHelper}

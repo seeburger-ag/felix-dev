@@ -22,8 +22,8 @@ import java.util.Set;
 
 import org.apache.felix.http.base.internal.javaxwrappers.ServletRequestWrapper;
 import org.apache.felix.http.base.internal.javaxwrappers.ServletResponseWrapper;
-import org.apache.felix.http.base.osgi.whiteboard.ServletContextHelper;
 import org.jetbrains.annotations.NotNull;
+import org.osgi.service.servlet.whiteboard.ServletContextHelper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

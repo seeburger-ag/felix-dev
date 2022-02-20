@@ -23,11 +23,11 @@ import org.apache.felix.http.base.internal.context.ExtServletContext;
 import org.apache.felix.http.base.internal.registry.HandlerRegistry;
 import org.apache.felix.http.base.internal.registry.PerContextHandlerRegistry;
 import org.apache.felix.http.base.internal.runtime.ServletContextHelperInfo;
-import org.apache.felix.http.base.osgi.whiteboard.ServletContextHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.service.servlet.whiteboard.ServletContextHelper;
 
 import jakarta.servlet.ServletContext;
 

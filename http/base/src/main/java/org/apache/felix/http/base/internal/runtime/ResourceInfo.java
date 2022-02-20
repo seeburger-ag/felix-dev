@@ -21,7 +21,7 @@ package org.apache.felix.http.base.internal.runtime;
 import org.apache.felix.http.base.internal.util.PatternUtil;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.HttpWhiteboardConstants;
 
 /**
  * Info object for a resource registration

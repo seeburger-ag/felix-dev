@@ -23,8 +23,8 @@ import jakarta.servlet.DispatcherType;
 
 import org.apache.felix.http.base.internal.handler.FilterHandler;
 import org.apache.felix.http.base.internal.runtime.FilterInfo;
-import org.osgi.service.http.runtime.dto.FailedFilterDTO;
-import org.osgi.service.http.runtime.dto.FilterDTO;
+import org.osgi.service.servlet.whiteboard.runtime.dto.FailedFilterDTO;
+import org.osgi.service.servlet.whiteboard.runtime.dto.FilterDTO;
 
 public final class FilterDTOBuilder
 {

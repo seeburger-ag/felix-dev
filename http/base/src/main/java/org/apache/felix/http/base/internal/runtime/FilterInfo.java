@@ -27,8 +27,8 @@ import org.apache.felix.http.base.internal.util.PatternUtil;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.dto.DTO;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.runtime.dto.FilterDTO;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.service.servlet.whiteboard.runtime.dto.FilterDTO;
+import org.osgi.service.servlet.whiteboard.HttpWhiteboardConstants;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;

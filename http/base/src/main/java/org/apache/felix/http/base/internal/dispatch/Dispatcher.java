@@ -28,8 +28,8 @@ import org.apache.felix.http.base.internal.registry.HandlerRegistry;
 import org.apache.felix.http.base.internal.registry.PathResolution;
 import org.apache.felix.http.base.internal.registry.PerContextHandlerRegistry;
 import org.apache.felix.http.base.internal.whiteboard.WhiteboardManager;
-import org.apache.felix.http.base.osgi.whiteboard.Preprocessor;
 import org.jetbrains.annotations.Nullable;
+import org.osgi.service.servlet.whiteboard.Preprocessor;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
