@@ -21,7 +21,6 @@ package org.apache.felix.fileinstall.internal;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +31,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -251,6 +253,29 @@ public class ConfigInstaller implements ArtifactInstaller, ConfigurationListener
                         return;
                     }
 
+                    //sanity check for config.getProperties - if empty besides filename, then this would empty the whole config
+                    boolean propertiesSane = dict.size() > 3; // quick check
+                    if (!propertiesSane)
+                    {
+                        for( Enumeration<?> e  = dict.keys(); e.hasMoreElements(); )
+                        {
+                            String key = e.nextElement().toString();
+                            if (!Constants.SERVICE_PID.equals(key)
+                                            && !ConfigurationAdmin.SERVICE_FACTORYPID.equals(key)
+                                            && !DirectoryWatcher.FILENAME.equals(key))
+                            {
+                                // found any other key than those 3 meta-keys
+                                propertiesSane = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!propertiesSane)
+                    {
+                        Util.log(context, Logger.LOG_WARNING, "Ignoring empty update for configuration file: " + fileName, null);
+                        return;
+                    }
+
                     TypedProperties props = new TypedProperties( bundleSubstitution() );
                     try (Reader r = new InputStreamReader(new FileInputStream(file), encoding()))
                     {
@@ -282,9 +307,26 @@ public class ConfigInstaller implements ArtifactInstaller, ConfigurationListener
                     {
                         props.remove(key);
                     }
-                    try (Writer fw = new OutputStreamWriter(new FileOutputStream(file), encoding()))
+
+                    Writer fw = null;
+                    try
                     {
+                        // writing to temp file and then moving to destination avoids temporary live files with 0 bytes,
+                        // which could trigger updates with empty config.
+                        // creating temp file in etc as well, to have an atomic move (even if CopyOption not explicitly given
+                        Path tempFile = Files.createTempFile(file.getParentFile().toPath(), file.getName() + "-", ".tmp");
+                        fw = new OutputStreamWriter(Files.newOutputStream(tempFile), encoding());
                         props.save( fw );
+                        fw.close();
+                        fw = null;
+                        Files.move(tempFile, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    finally
+                    {
+                        if (fw != null)
+                        {
+                            fw.close();
+                        }
                     }
                     // we're just writing out what's already loaded into ConfigAdmin, so
                     // update file checksum since lastModified gets updated when writing
