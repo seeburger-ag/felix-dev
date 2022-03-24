@@ -32,11 +32,20 @@
   <version>3.7.5-SNAPSHOT</version>
   <artifactId>org.apache.felix.fileinstall</artifactId>
   <scm>
-    <connection>scm:git:https://github.com/apache/felix-dev.git</connection>
-    <developerConnection>scm:git:https://github.com/apache/felix-dev.git</developerConnection>
-    <url>https://gitbox.apache.org/repos/asf?p=felix-dev.git</url>
+    <connection>scm:git:git@github.com:seeburger-ag/felix-dev.git</connection>
+    <developerConnection>scm:git:git@github.com:seeburger-ag/felix-dev.git</developerConnection>
+    <url>https://github.com/seeburger-ag/felix-dev</url>
     <tag>HEAD</tag>
   </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>apache.releases.https</id>
+      <name>Apache Release Distribution Repository</name>
+      <url>https://repo.seeburger.de/archiva/repository/release/</url>
+    </repository>
+  </distributionManagement>
+
   <properties>
     <felix.java.version>8</felix.java.version>
   </properties>
@@ -133,16 +142,25 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
+        <!-- need to deactivate one of the two executions of the sources plugin. see https://issues.apache.org/jira/browse/MNG-5939 -->
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.2.1</version>
+        <version>2.1.2</version>
         <executions>
           <execution>
             <id>attach-sources</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>ianal-maven-plugin</artifactId>
+        <executions>
+          <execution>
             <goals>
-              <goal>jar-no-fork</goal>
+              <goal>verify-legal-files</goal>
             </goals>
+            <phase>none</phase>
           </execution>
         </executions>
       </plugin>
