@@ -66,6 +66,10 @@ import org.osgi.service.cm.ConfigurationListener;
  */
 public class ConfigInstaller implements ArtifactInstaller, ConfigurationListener
 {
+    private static final int RETRIES_MAX = Integer.getInteger("org.apache.felix.fileinstall.internal.ConfigInstaller.RETRIES_MAX", 3).intValue();
+
+    private static final long RETRIES_TIMEOUT = Long.getLong("org.apache.felix.fileinstall.internal.ConfigInstaller.RETRIES_TIMEOUT", 3000).longValue();
+
     private final BundleContext context;
     private final ConfigurationAdmin configAdmin;
     private final FileInstall fileInstall;
@@ -308,26 +312,56 @@ public class ConfigInstaller implements ArtifactInstaller, ConfigurationListener
                         props.remove(key);
                     }
 
-                    Writer fw = null;
-                    try
+                    // writing to temp file and then moving to destination avoids temporary live files with 0 bytes,
+                    // which could trigger updates with empty config.
+                    // creating temp file in etc as well, to have an atomic move (even if CopyOption not explicitly given
+                    Path tempFile = Files.createTempFile(file.getParentFile().toPath(), file.getName() + "-", ".tmp");
+                    try (Writer fw = new OutputStreamWriter(Files.newOutputStream(tempFile), encoding()))
                     {
-                        // writing to temp file and then moving to destination avoids temporary live files with 0 bytes,
-                        // which could trigger updates with empty config.
-                        // creating temp file in etc as well, to have an atomic move (even if CopyOption not explicitly given
-                        Path tempFile = Files.createTempFile(file.getParentFile().toPath(), file.getName() + "-", ".tmp");
-                        fw = new OutputStreamWriter(Files.newOutputStream(tempFile), encoding());
-                        props.save( fw );
-                        fw.close();
-                        fw = null;
-                        Files.move(tempFile, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        props.save(fw);
                     }
-                    finally
+
+                    // be robust against temporary locked files
+                    int tries = 0;
+                    long timePassed;
+                    final long start = System.currentTimeMillis();
+                    IOException fatalEx;
+                    do
                     {
-                        if (fw != null)
+                        tries++;
+                        try
                         {
-                            fw.close();
+                            Files.move(tempFile, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            fatalEx = null;
+                            break; // all good
+                        }
+                        catch (IOException ioEx)
+                        {
+                            fatalEx = ioEx;
+                            Util.log(context, Logger.LOG_WARNING, "Error replacing config file " + file +
+                                            "! Will retry up to " + RETRIES_MAX +
+                                            " times before fatal error, current retry=" + (tries-1) +
+                                            "! Ex=" + ioEx, null);
+
+                            try
+                            {
+                                long sleepTime = Math.min(3000, (2 * (long)Math.pow(10d, tries))); // 20, 200, 2000, 3000ms
+                                Thread.sleep(sleepTime);
+                            }
+                            catch (InterruptedException intEx)
+                            {
+                                Thread.currentThread().interrupt();
+                            }
+                            timePassed = System.currentTimeMillis() - start;
                         }
                     }
+                    while (tries <= RETRIES_MAX && timePassed < RETRIES_TIMEOUT);
+                    if (fatalEx != null)
+                    {
+                        Util.log(context, Logger.LOG_ERROR, "Error replacing config file " + file, fatalEx);
+                        throw fatalEx;
+                    }
+
                     // we're just writing out what's already loaded into ConfigAdmin, so
                     // update file checksum since lastModified gets updated when writing
                     fileInstall.updateChecksum(file);
