@@ -385,7 +385,7 @@ public class DirectoryWatcher extends Thread implements BundleListener
         }
 
         for (File file : files) {
-            boolean exists = file.exists();
+            boolean exists = existsWithRetry(file);
             Artifact artifact = getArtifact(file);
             // File has been deleted
             if (!exists) {
@@ -527,6 +527,22 @@ public class DirectoryWatcher extends Thread implements BundleListener
         }
     }
 
+    private boolean existsWithRetry(File file)
+    {
+        for (int i=0; i<3; i++) {
+            if (file.exists()) {
+                return true;
+            }
+            try {
+                sleep(100);
+            } catch (Exception e) {
+                interrupt();
+            }
+        }
+        log(Logger.LOG_DEBUG, "File '"+file.toString()+"' still missing after 3 tries, deleting", null);
+        return false;
+    }
+
     ArtifactListener findListener(File artifact, List<ArtifactListener> listeners)
     {
         for (ArtifactListener listener : listeners) {
@@ -608,14 +624,14 @@ public class DirectoryWatcher extends Thread implements BundleListener
         if (tmpDir == null)
         {
             File javaIoTmpdir = new File(System.getProperty("java.io.tmpdir"));
-            if (!javaIoTmpdir.exists() && !javaIoTmpdir.mkdirs()) {
+            if (!existsWithRetry(javaIoTmpdir) && !javaIoTmpdir.mkdirs()) {
                 throw new IllegalStateException("Unable to create temporary directory " + javaIoTmpdir);
             }
             Random random = new Random();
             while (tmpDir == null)
             {
                 File f = new File(javaIoTmpdir, "fileinstall-" + Long.toString(random.nextLong()));
-                if (!f.exists() && f.mkdirs())
+                if (!existsWithRetry(f) && f.mkdirs())
                 {
                     tmpDir = f;
                     tmpDir.deleteOnExit();
@@ -638,7 +654,7 @@ public class DirectoryWatcher extends Thread implements BundleListener
      */
     private void prepareDir(File dir)
     {
-        if (!dir.exists() && !dir.mkdirs())
+        if (!existsWithRetry(dir) && !dir.mkdirs())
         {
             log(Logger.LOG_ERROR,
                 "Cannot create folder "
