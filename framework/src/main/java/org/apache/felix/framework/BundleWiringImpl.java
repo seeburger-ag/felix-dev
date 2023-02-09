@@ -1769,7 +1769,7 @@ public class BundleWiringImpl implements BundleWiring
             {
                 break;
             }
-            // Break if this goes through ServiceRegistrationImpl.ServiceReferenceImpl 
+            // Break if this goes through ServiceRegistrationImpl.ServiceReferenceImpl
             // because it must be a assignability check which should not implicitly boot delegate
             else if (ServiceRegistrationImpl.ServiceReferenceImpl.class.equals(classes[i]))
             {
@@ -2115,9 +2115,18 @@ public class BundleWiringImpl implements BundleWiring
 
             Thread me = Thread.currentThread();
 
+            int count = 0;
+            long start = System.nanoTime();
             while (clazz == null && m_classLocks.putIfAbsent(name, me) != me)
             {
+            	Thread.yield(); count++;
                 clazz = findLoadedClass(name);
+            }
+
+            long end = System.nanoTime();
+            if (count > 3 || end - start > 2_000_000_000)
+            {
+            	System.out.println("SEE THE PROBLEM? count=" + count + " nanos=" + (end - start) + " for " + name);
             }
 
             if (clazz == null)
