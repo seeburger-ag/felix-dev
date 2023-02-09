@@ -2124,7 +2124,7 @@ public class BundleWiringImpl implements BundleWiring
             }
 
             long end = System.nanoTime();
-            if (count > 3 || end - start > 2_000_000_000)
+            if (count > 3 || end - start > 2000000000)
             {
             	System.out.println("SEE THE PROBLEM? count=" + count + " nanos=" + (end - start) + " for " + name);
             }
