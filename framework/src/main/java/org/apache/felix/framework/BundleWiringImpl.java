@@ -74,6 +74,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BundleWiringImpl implements BundleWiring
 {
@@ -171,6 +173,8 @@ public class BundleWiringImpl implements BundleWiring
 
     private volatile ConcurrentHashMap<String, ClassLoader> m_accessorLookupCache;
 
+private static long count = 0L; // only debugging
+
     BundleWiringImpl(
         Logger logger, Map configMap, StatefulResolver resolver,
         BundleRevisionImpl revision, List<BundleRevision> fragments,
@@ -186,6 +190,7 @@ public class BundleWiringImpl implements BundleWiring
         m_requiredPkgs = requiredPkgs;
         m_wires =  Util.newImmutableList(wires);
 
+System.err.println("BundleWiringImpl"+ (++count) + " " + revision);
         // We need to sort the fragments and add ourself as a dependent of each one.
         // We also need to create an array of fragment contents to attach to our
         // content path.
@@ -1919,11 +1924,14 @@ public class BundleWiringImpl implements BundleWiring
         private final BundleWiringImpl m_wiring;
         private final Logger m_logger;
 
+private static long clcount; // only for debugging
+
         public BundleClassLoader(BundleWiringImpl wiring, ClassLoader parent, Logger logger)
         {
             super(parent);
             m_wiring = wiring;
             m_logger = logger;
+System.err.println("BundleClassLoader " + (++clcount) + " " + wiring);
         }
 
         public boolean isActivationTriggered()
@@ -2075,6 +2083,7 @@ public class BundleWiringImpl implements BundleWiring
                     }
 
                     // Perform deferred activation without holding the class loader lock,
+                    // TODO: is this refering to the single-class lock?
                     // if the class we are returning is the instigating class.
                     List deferredList = (List) m_deferredActivation.get();
                     if ((deferredList != null)
@@ -2109,25 +2118,231 @@ public class BundleWiringImpl implements BundleWiring
         }
 
         Class defineClassParallel(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+        		// temporary config which impl to use (see below)
+//        		return defineClassParallelOriginal(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+//        		return defineClassParallelYield(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+//    		    return defineClassParallelFixed(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+        		return defineClassParallelWait(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+//        		return defineClassParallelSuperLock(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+//        		return defineClassParallelSlots(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+//        		return defineClassParallelYieldDebug(name, felix, wovenClassListeners, wci, bytes, content, pkgName);
+            }
+
+        Class defineClassParallelOriginal(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+                Class clazz = null;
+
+                Thread me = Thread.currentThread();
+
+                while (clazz == null && m_classLocks.putIfAbsent(name, me) != me)
+                {
+                    clazz = findLoadedClass(name);
+                }
+
+                if (clazz == null)
+                {
+                    try
+                    {
+                        clazz = findLoadedClass(name);
+                        if (clazz == null)
+                        {
+                            clazz = defineClass(felix, wovenClassListeners, wci, name,
+                                bytes, content, pkgName);
+                        }
+                    }
+                    finally
+                    {
+                        m_classLocks.remove(name);
+                    }
+                }
+                return clazz;
+            }
+
+        Class defineClassParallelFixed(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+                Thread me = Thread.currentThread();
+                Thread other = me; // make sure its not null
+
+                try {
+                    Class clazz = null;
+                	do {
+                		clazz = findLoadedClass(name);
+                		if (clazz != null)
+                			return clazz;
+                		other = m_classLocks.putIfAbsent(name, me);
+                        // no need to wait if we aquired (other=null) or hold (other=me) the lock
+                		if (other != null && other != me)
+                			Thread.yield();
+                	} while (other != null && other != me);
+
+                	clazz = findLoadedClass(name);
+                	if (clazz == null)
+                	{
+                		clazz = defineClass(felix, wovenClassListeners, wci, name,
+                				bytes, content, pkgName);
+                	}
+                    return clazz;
+                }
+                finally
+                {
+                	// only if putIfAbsent returned null we have aquired the lock in this recursion
+                	if (other == null) {
+                		m_classLocks.remove(name);
+                	}
+                }
+            }
+
+
+        Class defineClassParallelYield(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+                Class clazz = null;
+                // TODO: add pre-spin/yield if-return?
+
+                Thread me = Thread.currentThread();
+
+                while (clazz == null && m_classLocks.putIfAbsent(name, me) != me)
+                {
+                	Thread.yield(); // TODO: counter to do it less often?
+                    clazz = findLoadedClass(name);
+                }
+
+                if (clazz == null)
+                {
+                    try
+                    {
+                        clazz = findLoadedClass(name);
+                        if (clazz == null)
+                        {
+                            clazz = defineClass(felix, wovenClassListeners, wci, name,
+                                bytes, content, pkgName);
+                        }
+                    }
+                    finally
+                    {
+                        m_classLocks.remove(name);
+                    }
+                }
+                return clazz;
+            }
+
+        /* This does sleep longer than yield and gets woken up. The number of pending waits
+         * should be small, so notifyAll does not wake a thundering herd. Besides the regular
+         * wakeup stays in line with existing code.
+         */
+        Class defineClassParallelWait(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+            Thread me = Thread.currentThread();
+            boolean interrupted = false;
+            Thread other = me; // make sure its not null
+
+            try {
+                Class clazz = null;
+            	do {
+            		clazz = findLoadedClass(name);
+            		if (clazz != null)
+            			return clazz;
+            		other = m_classLocks.putIfAbsent(name, me);
+                    // no need to wait if we aquired (other=null) or hold (other=me) the lock
+            		if (other != null && other != me)
+            			synchronized (m_classLocks) {
+            				try {
+								m_classLocks.wait(30); // any wait time will do
+							} catch (InterruptedException e) {
+								interrupted = true;
+							}
+						}
+            	} while (other != null && other != me);
+
+            	clazz = findLoadedClass(name);
+            	if (clazz == null)
+            	{
+            		clazz = defineClass(felix, wovenClassListeners, wci, name,
+            				bytes, content, pkgName);
+            	}
+                return clazz;
+            }
+            finally
+            {
+            	// restore interrupted state
+            	if (interrupted)
+            		me.interrupt();
+            	// only if putIfAbsent returned null we have aquired the lock in this recursion
+            	if (other == null) {
+            		m_classLocks.remove(name);
+            		// now somebody else can make progress, wake them up
+            		synchronized (m_classLocks) {
+            			m_classLocks.notifyAll();
+					}
+            	}
+            }
+            }
+
+        /*
+         * This uses the lock-per-class mechanism from ClassLoader. Neat code with the
+         * added benefit of using synchronized. But the locks are never cleaned up?
+         */
+        Class defineClassParallelSuperLock(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+        {
+            long start = System.nanoTime();
+
+			// the caller already checked for loaded, but we do it again before the lock
+			// since waving might took some time
+			Class<?> clazz = findLoadedClass(name);
+			if (clazz != null)
+			{
+System.out.println("Occasional success class=" + name + " was loaeded before lock in thread=" + Thread.currentThread()); // does happen
+				return clazz;
+			}
+
+			synchronized (getClassLoadingLock(name))
+        	{
+        		clazz = findLoadedClass(name);
+
+long locked = System.nanoTime();
+if (locked - start > TimeUnit.MILLISECONDS.toNanos(30))
+	System.out.println("Took " + (locked - start) + "ns to lock " + name + " in " + Thread.currentThread());
+
+    			if (clazz == null)
+        		{
+        			clazz = defineClass(felix, wovenClassListeners, wci, name,
+        					bytes, content, pkgName);
+        		}
+        		return clazz;
+        	}
+        }
+
+        Class defineClassParallelYieldDebug(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
             Content content, String pkgName) throws ClassFormatError
         {
             Class clazz = null;
 
             Thread me = Thread.currentThread();
 
-            int count = 0;
-            long start = System.nanoTime();
-            while (clazz == null && m_classLocks.putIfAbsent(name, me) != me)
+            // TODO: add pre-spin/yield if-return?
+
+int count = 0;
+long start = System.nanoTime();
+Thread other,seen = null;
+
+            while (clazz == null && (other=m_classLocks.putIfAbsent(name, me)) != me)
             {
-            	Thread.yield(); count++;
+
+seen = other;
+Thread.yield(); count++; // TODO: add if % maxspins?
+
                 clazz = findLoadedClass(name);
             }
 
-            long end = System.nanoTime();
-            if (count > 3 || end - start > 2000000000)
-            {
-            	System.out.println("SEE THE PROBLEM? count=" + count + " nanos=" + (end - start) + " for " + name);
-            }
+long end = System.nanoTime();
+if (count > 1 || end - start > 2000000000)
+    System.out.println("SEEPROBLEM c=" + count + " ns=" + (end - start) + " cl=" + name + " [" + me.getName() +"] vs " + seen.getName());
 
             if (clazz == null)
             {
@@ -2147,6 +2362,61 @@ public class BundleWiringImpl implements BundleWiring
             }
             return clazz;
         }
+
+
+        // use a power of two size, deadlocks with smaller number of slots since some threads hold multiple
+        private static ReentrantLock[] locks = new ReentrantLock[1024];
+
+        static {
+            for(int i = 0; i < locks.length; i++)
+                locks[i] = new ReentrantLock(true);
+        }
+
+        Class defineClassParallelSlots(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
+                Content content, String pkgName) throws ClassFormatError
+            {
+                Class clazz = findLoadedClass(name);
+                if (clazz != null)
+                {
+System.out.println("Quick out " + name); // does actually hgappen once in a while
+                    return clazz;
+                }
+
+                int slot = name.hashCode() & locks.length - 1; // TODO mix bits and reminder
+                ReentrantLock sem = locks[slot];
+
+long pre = System.nanoTime();
+System.out.println(slot + ": aquire " + name + " locked? " + sem.isLocked()+ " me? " + sem.isHeldByCurrentThread() + " " + Thread.currentThread());
+
+                sem.lock();
+                try {
+long post = System.nanoTime();
+long duration = post - pre;
+if (duration > 200)
+    System.out.println("waiting lock for " + duration + " " + name);
+
+                    clazz = findLoadedClass(name);
+                    if (clazz != null)
+                    {
+System.out.println("Found early " + name);
+                        return clazz;
+                    }
+
+                    clazz = defineClass(felix, wovenClassListeners, wci, name,
+                            bytes, content, pkgName);
+
+long defined = System.nanoTime();
+if (defined - post > 1000000)
+    System.out.println("Slow define " + name + " " + (defined - post));
+
+                    return clazz;
+                }
+                finally
+                {
+System.out.println(slot + ": release");
+                	sem.unlock();
+                }
+            }
 
         Class defineClassNotParallel(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
             Content content, String pkgName) throws ClassFormatError
@@ -2173,6 +2443,7 @@ public class BundleWiringImpl implements BundleWiring
             WovenClassImpl wci, String name, byte[] bytes, Content content, String pkgName)
             throws ClassFormatError
         {
+long start = System.nanoTime();
             // If we have a woven class then get the class bytes from
             // it since they may have changed.
             // NOTE: We are taking a snapshot of these values and
@@ -2338,6 +2609,11 @@ public class BundleWiringImpl implements BundleWiring
             {
                 m_isActivationTriggered = true;
             }
+
+// debug code to get impression for order of magnitude of class loading
+long dur = System.nanoTime() - start;
+if (dur > TimeUnit.MILLISECONDS.toNanos(20))
+    System.out.println("defineClass took rather long. name=" + name +" time=" + dur +"ns thread=" + Thread.currentThread());
 
             return clazz;
         }
