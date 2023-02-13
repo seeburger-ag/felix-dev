@@ -1769,7 +1769,7 @@ public class BundleWiringImpl implements BundleWiring
             {
                 break;
             }
-            // Break if this goes through ServiceRegistrationImpl.ServiceReferenceImpl 
+            // Break if this goes through ServiceRegistrationImpl.ServiceReferenceImpl
             // because it must be a assignability check which should not implicitly boot delegate
             else if (ServiceRegistrationImpl.ServiceReferenceImpl.class.equals(classes[i]))
             {
@@ -2111,32 +2111,63 @@ public class BundleWiringImpl implements BundleWiring
         Class defineClassParallel(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
             Content content, String pkgName) throws ClassFormatError
         {
-            Class clazz = null;
-
             Thread me = Thread.currentThread();
+            Thread other = me; // make sure its not null
+            boolean interrupted = false;
 
-            while (clazz == null && m_classLocks.putIfAbsent(name, me) != me)
-            {
-                clazz = findLoadedClass(name);
-            }
+        	try
+        	{
+        		Class clazz = null;
+        		do
+        		{
+        			clazz = findLoadedClass(name);
+        			if (clazz != null)
+        			{
+        				return clazz;
+        			}
+        			other = m_classLocks.putIfAbsent(name, me);
+        			// no need to wait if we acquired (other=null) or hold (other=me) the lock
+        			if (other != null && other != me)
+        			{
+        				synchronized (m_classLocks)
+        				{
+        					try
+        					{
+        						m_classLocks.wait(30); // any wait time will do
+        					} catch (InterruptedException e) {
+        						interrupted = true;
+        					}
+        				}
+        			}
+        		} while (other != null && other != me);
 
-            if (clazz == null)
-            {
-                try
-                {
-                    clazz = findLoadedClass(name);
-                    if (clazz == null)
-                    {
-                        clazz = defineClass(felix, wovenClassListeners, wci, name,
-                            bytes, content, pkgName);
-                    }
-                }
-                finally
-                {
-                    m_classLocks.remove(name);
-                }
-            }
-            return clazz;
+        		clazz = findLoadedClass(name);
+        		if (clazz == null)
+        		{
+        			clazz = defineClass(felix, wovenClassListeners, wci, name,
+        					bytes, content, pkgName);
+        		}
+        		return clazz;
+        	}
+        	finally
+        	{
+        		// only if putIfAbsent returned null we have acquired the lock in this recursion
+        		if (other == null)
+        		{
+        			m_classLocks.remove(name);
+        			// now somebody else can make progress, wake them up
+        			synchronized (m_classLocks)
+        			{
+        				m_classLocks.notifyAll();
+        			}
+        		}
+
+        		// restore interrupted state
+        		if (interrupted)
+        		{
+        			me.interrupt();
+        		}
+        	}
         }
 
         Class defineClassNotParallel(String name, Felix felix, Set<ServiceReference<WovenClassListener>> wovenClassListeners, WovenClassImpl wci, byte[] bytes,
