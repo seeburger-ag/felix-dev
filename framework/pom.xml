@@ -33,11 +33,19 @@
     <felix.java.version>8</felix.java.version>
   </properties>
   <scm>
-    <connection>scm:git:https://github.com/apache/felix-dev.git</connection>
-    <developerConnection>scm:git:https://github.com/apache/felix-dev.git</developerConnection>
-    <url>https://gitbox.apache.org/repos/asf?p=felix-dev.git</url>
+    <connection>scm:git:git@github.com:seeburger-ag/felix-dev.git</connection>
+    <developerConnection>scm:git:git@github.com:seeburger-ag/felix-dev.git</developerConnection>
+    <url>https://github.com/seeburger-ag/felix-dev</url>
     <tag>org.apache.felix.framework-7.0.2</tag>
   </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>apache.releases.https</id>
+      <name>Apache Release Distribution Repository</name>
+      <url>https://repo.seeburger.de/archiva/repository/release/</url>
+    </repository>
+  </distributionManagement>
 
   <build>
     <plugins>
@@ -110,7 +118,7 @@
             <Export-Package>
                 org.osgi.framework.*;-split-package:=first,
                 org.osgi.resource;-split-package:=first,
-                org.osgi.resource.dto;-split-package:=first,                
+                org.osgi.resource.dto;-split-package:=first,
                 org.osgi.service.packageadmin;-split-package:=first,
                 org.osgi.service.startlevel;-split-package:=first,
                 org.osgi.service.url;-split-package:=first,
