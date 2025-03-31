@@ -71,6 +71,7 @@ public class BundleArchive
     public static final transient String FILE_PROTOCOL = "file:";
     public static final transient String REFERENCE_PROTOCOL = "reference:";
     public static final transient String INPUTSTREAM_PROTOCOL = "inputstream:";
+    public static final transient boolean SEE_BY_REFERENCE = Boolean.getBoolean("org.apache.felix.framework.cache.see.by.reference");
 
     private static final transient String BUNDLE_INFO_FILE = "bundle.info";
     private static final transient String REVISION_LOCATION_FILE = "revision.location";
@@ -482,7 +483,7 @@ public class BundleArchive
         // no matter what the update location is, so just ignore
         // the update location and set the location to be input
         // stream.
-        if (is != null)
+        if (!(SEE_BY_REFERENCE && location != null && location.startsWith(REFERENCE_PROTOCOL)) && is != null)
         {
             location = "inputstream:";
         }
