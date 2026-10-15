@@ -2097,7 +2097,9 @@ public class BundleWiringImpl implements BundleWiring
         		// only if putIfAbsent returned null we have acquired the lock in this recursion
         		if (other == null)
         		{
-        			m_classLocks.remove(name);
+                    // The lock is taken in the loop condition, so this thread may hold it on any exit
+                    // path, also when another thread defined the class first. Only release our own lock.
+                    m_classLocks.remove(name, me);
         			// now somebody else can make progress, wake them up
         			synchronized (m_classLocks)
         			{
