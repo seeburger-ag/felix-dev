@@ -27,7 +27,7 @@
   <packaging>bundle</packaging>
   <name>Apache Felix Framework</name>
   <artifactId>org.apache.felix.framework</artifactId>
-  <version>8.0.0.SEE1</version>
+  <version>8.0.0.SEE2-SNAPSHOT</version>
   <properties>
     <dollar>$</dollar>
     <!-- See FELIX-6759. Replacing the SecurityManager based call stack inspection
@@ -40,7 +40,7 @@
     <connection>scm:git:git@github.com:seeburger-ag/felix-dev.git</connection>
     <developerConnection>scm:git:git@github.com:seeburger-ag/felix-dev.git</developerConnection>
     <url>https://github.com/seeburger-ag/felix-dev</url>
-    <tag>org.apache.felix.framework-8.0.0.SEE1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <distributionManagement>
